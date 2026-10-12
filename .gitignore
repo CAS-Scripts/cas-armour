@@ -3,3 +3,39 @@
 node_modules/
 .env
 *.orig
+
+# generated
+.vite/
+.next/
+.next-*/
+.turbo/
+.cache/
+coverage/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+# local env files (ask the owner for them)
+.env.*
+!.env.example
+!.env.*.example
+# junk
+*.log
+bash.exe.stackdump
+Thumbs.db
+desktop.ini
+.DS_Store
+*.bak
+*.bak-*
+# design sources and archives stay out of the team repos (code only)
+*.psd
+*.psb
+*.blend
+*.blend1
+*.spp
+*.spt
+*.ai
+*.sbs
+*.sbsar
+*.rar
+*.zip
+*.7z
