@@ -4,6 +4,31 @@
 
   const RES_NAME = (typeof GetParentResourceName === "function") ? GetParentResourceName() : "cas-armour";
 
+  function _casSendNuiReady(){
+    try {
+      fetch("https://" + RES_NAME + "/cas_armour:nuiReady", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).catch(function(){});
+    } catch(e){}
+  }
+
+  window.addEventListener("message", function(event){
+    var d = event && event.data;
+    if(d && d.action === "cas_armour:ping"){
+      _casSendNuiReady();
+    }
+  });
+
+  _casSendNuiReady();
+  var _casReadyTries = 0;
+  var _casReadyTimer = setInterval(function(){
+    _casReadyTries++;
+    _casSendNuiReady();
+    if(_casReadyTries >= 40){ clearInterval(_casReadyTimer); }
+  }, 1500);
+
   const STATE = {
     open: false,
     dragging: false,
@@ -85,7 +110,8 @@ function flushRender(ts){
     renderEquipment();
     renderStats();
 
-    if(STATE.ui.$setsUI && STATE.ui.$setsUI.hasClass("is-active")){
+    var setsEl = document.getElementById("sets-ui");
+    if(setsEl && setsEl.classList.contains("is-active")){
       renderSetsList();
       if(STATE.selectedSetId){
         renderSetDetails(STATE.selectedSetId);
@@ -302,6 +328,16 @@ function preloadInventoryIcons(items){
   }
 }
 
+  var _didInit = false;
+  function ensureInit(){
+    if(_didInit) return;
+    if(typeof $ === "undefined") return;
+    _didInit = true;
+    cacheUI();
+    bindUI();
+    bindInventoryDroppable();
+  }
+
 function setLoading(active){
   const el = document.getElementById("cas-loading");
   if(!el) return;
@@ -310,16 +346,16 @@ function setLoading(active){
 }
 
 function activatePage(which){
-  const $armor = STATE.ui.$armorUI;
-  const $sets = STATE.ui.$setsUI;
-  if(!$armor || !$sets) return;
+  var armor = document.getElementById("armor-ui");
+  var sets = document.getElementById("sets-ui");
+  if(!armor || !sets) return;
 
   if(which === "sets"){
-    $sets.addClass("is-active");
-    $armor.removeClass("is-active");
+    sets.classList.add("is-active");
+    armor.classList.remove("is-active");
   } else {
-    $armor.addClass("is-active");
-    $sets.removeClass("is-active");
+    armor.classList.add("is-active");
+    sets.classList.remove("is-active");
   }
 }
 
@@ -354,7 +390,11 @@ function normalizeBonuses(bonuses){
   }
 
   function postNui(action, payload){
-    return $.post(`https://${RES_NAME}/${action}`, JSON.stringify(payload || {}));
+    return fetch(`https://${RES_NAME}/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {})
+    });
   }
 
   function piecesCfg(){ return (STATE.config && (STATE.config.armorPieces || STATE.config.pieces)) || {}; }
@@ -406,9 +446,9 @@ function normalizeBonuses(bonuses){
   function openUI(){
   STATE.open = true;
 
-  $("body").addClass("cas-stage cas-ui-open");
+  document.body.classList.add("cas-stage", "cas-ui-open");
 
-  if(!STATE.ui.$armorUI) cacheUI();
+  ensureInit();
 
   setLoading(true);
   preloadCoreAssets().finally(() => {
@@ -425,19 +465,19 @@ function closeUI(){
   STATE.open = false;
   STATE.focusedSlot = null;
 
-  if(!STATE.ui.$armorUI) cacheUI();
-
-  STATE.ui.$armorUI.removeClass("is-active");
-  STATE.ui.$setsUI.removeClass("is-active");
+  var armor = document.getElementById("armor-ui");
+  var sets = document.getElementById("sets-ui");
+  if(armor) armor.classList.remove("is-active");
+  if(sets) sets.classList.remove("is-active");
   setLoading(false);
 
   const svg = document.getElementById("cas-bone-lines");
   if(svg) svg.innerHTML = "";
 
-  $("body").removeClass("cas-ui-open");
+  document.body.classList.remove("cas-ui-open");
 
   setTimeout(() => {
-    $("body").removeClass("cas-stage");
+    document.body.classList.remove("cas-stage");
     clearSelectedPanel();
   }, 220);
 
@@ -598,7 +638,7 @@ function buildSlotsIfNeeded(){
 
   function renderInventory(){
     const $grid = STATE.ui.$invGrid;
-    if($grid.length === 0) return;
+    if(!$grid || $grid.length === 0) return;
 
     const q = (STATE.query || "").toLowerCase().trim();
     const w = (STATE.filterWeight || "all").toLowerCase();
@@ -686,6 +726,7 @@ invDragTimer = setTimeout(() => {
   }
 
   function renderEquipment(){
+    if(typeof $ === "undefined") return;
     buildSlotsIfNeeded();
 
     const eq = STATE.equipment || {};
@@ -1030,7 +1071,7 @@ function renderHud(){
 
 function renderStats(){
     const $grid = STATE.ui.$statsGrid;
-    if($grid.length === 0) return;
+    if(!$grid || $grid.length === 0) return;
 
     const stats = STATE.stats || {};
     const keys = Object.keys(stats).filter(k => stats[k] !== 0 && stats[k] !== null && stats[k] !== undefined);
@@ -1376,26 +1417,29 @@ function renderStats(){
       positionFloatingSlots();
       return;
     }
-    if(data.action === "cas_armour:ping"){
-      postNui("cas_armour:nuiReady", {});
-      return;
-    }
   });
 
-  $(document).ready(function(){
-    cacheUI();
-    bindUI();
-    bindInventoryDroppable();
+  document.addEventListener("DOMContentLoaded", function(){
+    document.body.classList.remove("cas-ui-open", "cas-stage");
+    var armor = document.getElementById("armor-ui");
+    var sets = document.getElementById("sets-ui");
+    if(armor) armor.classList.remove("is-active");
+    if(sets) sets.classList.remove("is-active");
 
-    $("body").removeClass("cas-ui-open cas-stage");
-    STATE.ui.$armorUI.removeClass("is-active");
-    STATE.ui.$setsUI.removeClass("is-active");
-    clearSelectedPanel();
-    markHudDirty();
+    _casSendNuiReady();
 
-    setTimeout(() => { preloadCoreAssets(); }, 50);
-
-    postNui("cas_armour:nuiReady", {});
+    function tryInit(){
+      if(typeof $ === "undefined"){
+        setTimeout(tryInit, 100);
+        return;
+      }
+      ensureInit();
+      clearSelectedPanel();
+      markHudDirty();
+      setTimeout(function(){ preloadCoreAssets(); }, 50);
+      _casSendNuiReady();
+    }
+    tryInit();
   });
 
 })();

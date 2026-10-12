@@ -3,7 +3,7 @@
 
 Config = Config or {}
 
-Config.Debug = true
+Config.Debug = false
 Config.RegisterUsableItems = false -- auto-equip armor piece on item use if slot is empty
 
 -- UI open command and keybind
