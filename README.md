@@ -85,3 +85,11 @@ All tuning values are in `shared/config.lua` under `Config.Tuning`, `Config.Weig
 
 **Server:**
 - `exports['cas-armour']:GetEquipment(source)`
+
+## More from CAS Scripts
+
+- **Store:** [codeaftersex.com/scripts](https://codeaftersex.com/scripts), RedM scripts for VORP and RSG servers, most with a live demo
+- **Free maps:** [codeaftersex.com/maps](https://codeaftersex.com/maps)
+- **More free scripts:** [github.com/CAS-Scripts](https://github.com/CAS-Scripts)
+- **Documentation:** [code-after-sex.gitbook.io/script-documentation](https://code-after-sex.gitbook.io/script-documentation/)
+- **Support:** [Discord](https://discord.gg/codeaftersex)
